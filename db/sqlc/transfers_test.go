@@ -73,7 +73,7 @@ func TestListTransfers(t *testing.T){
 	require.NoError(t,err)
 	require.Len(t,transfers,5)
 
-	for _, transfer := range transfers{
+	for _, transfer := range createdTransfers{
 		require.NotEmpty(t,transfer)
 		deleteTranserById(t, transfer.ID)
 		deleteAccountWithId(t, transfer.FromAccountID)

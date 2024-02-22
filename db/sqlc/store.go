@@ -57,15 +57,87 @@ type TransferTransactionResult struct {
 	FromAccount Account `json:"from_account"`
 	ToAccount Account `json:"to_account"`
 	FromEntry Entry `json:"from_entry"`
-	ToEntry int64 `json:"to_entry"`
+	ToEntry Entry `json:"to_entry"`
 }
 
 // performs a money transfer from one account to other 
 // It creates a transfer record, add account entries
 // and update account within a single db transaction 
+func (store *Store) TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, error) {
+
+	var result TransferTransactionResult
 
 
-// func (store *Store) TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, err) {
+	err := store.execTransaction(ctx, func(q *Queries) error {
+		
+		var err error
+
+		transfer, err := q.CreateTransfer(ctx, CreateTransferParams{
+			FromAccountID: arg.FromAccountId,
+			ToAccountID: arg.ToAccountId,
+			Amount: arg.Ammount,
+		})
+	
+		if err != nil {
+			return err
+		}
+		result.Transfer = transfer
+
+		fromEntry, err := q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.FromAccountId,
+			Amount: -arg.Ammount,
+		})
+
+
+		if err != nil {
+			return err
+		}
+		result.FromEntry = fromEntry
+
+		toEntry, err := q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.ToAccountId,
+			Amount: arg.Ammount,
+		})
+
+
+		if err != nil {
+			return err
+		}
+		result.ToEntry = toEntry
+
+		account1,err := q.GetAccountForUpdates(ctx,arg.FromAccountId)
+		if err != nil {
+			return err
+		}
+
+		updatedFromAccount, err := q.UpdateAccount(ctx, UpdateAccountParams{
+			ID: arg.FromAccountId,
+			Balance: account1.Balance - arg.Ammount,
+		})
+		if err != nil {
+			return err
+		}
+		result.FromAccount = updatedFromAccount
+
+		account2,err := q.GetAccountForUpdates(ctx,arg.ToAccountId)
+		if err != nil {
+			return err
+		}
+
+		updatedToAccount, err := q.UpdateAccount(ctx, UpdateAccountParams{
+			ID: arg.ToAccountId,
+			Balance: account2.Balance + arg.Ammount,
+		})
+		if err != nil {
+			return err
+		}
+		result.ToAccount = updatedToAccount
 
 	
-// }
+
+		return nil
+	})
+
+	
+	return result, err
+}
