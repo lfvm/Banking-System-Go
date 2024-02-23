@@ -101,12 +101,12 @@ func (store *Store) TransferTransaction(ctx context.Context, arg TransferTransac
 		// account with the smaller id first. Lets remember that the order in which queries happen is important 
 		// and can make deadlock errors if not done properly 
 		if arg.FromAccountId < arg.ToAccountId { 
-			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountId, -arg.Ammount, arg.ToAccountId)
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountId, -arg.Ammount, arg.ToAccountId,arg.Ammount)
 			if err != nil {
 				return err
 			}
 		} else {
-			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.ToAccountId, arg.Ammount, arg.FromAccountId)
+			result.ToAccount, result.FromAccount, err = addMoney(ctx, q, arg.ToAccountId, arg.Ammount, arg.FromAccountId, -arg.Ammount)
 			if err != nil {
 				return err
 			}
@@ -126,6 +126,7 @@ func addMoney(
 	accountId1 int64, 
 	amount int64, 
 	accountId2 int64,
+	ammount2 int64,
 ) (account1 Account, account2 Account, err error) {
 
 	account1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
@@ -139,7 +140,7 @@ func addMoney(
 
 	account2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
 		ID: accountId2,
-		Ammount: amount,
+		Ammount: ammount2,
 	})
 
 	if err != nil {
