@@ -66,78 +66,84 @@ type TransferTransactionResult struct {
 func (store *Store) TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, error) {
 
 	var result TransferTransactionResult
-
-
 	err := store.execTransaction(ctx, func(q *Queries) error {
 		
 		var err error
 
-		transfer, err := q.CreateTransfer(ctx, CreateTransferParams{
+		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
 			FromAccountID: arg.FromAccountId,
 			ToAccountID: arg.ToAccountId,
 			Amount: arg.Ammount,
+		})	
+		if err != nil {
+			return err
+		}
+
+		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.FromAccountId,
+			Amount: -arg.Ammount,
 		})
 	
 		if err != nil {
 			return err
 		}
-		result.Transfer = transfer
 
-		fromEntry, err := q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.FromAccountId,
-			Amount: -arg.Ammount,
-		})
-
-
-		if err != nil {
-			return err
-		}
-		result.FromEntry = fromEntry
-
-		toEntry, err := q.CreateEntry(ctx, CreateEntryParams{
+		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.ToAccountId,
 			Amount: arg.Ammount,
 		})
 
-
-		if err != nil {
-			return err
-		}
-		result.ToEntry = toEntry
-
-		account1,err := q.GetAccountForUpdates(ctx,arg.FromAccountId)
 		if err != nil {
 			return err
 		}
 
-		updatedFromAccount, err := q.UpdateAccount(ctx, UpdateAccountParams{
-			ID: arg.FromAccountId,
-			Balance: account1.Balance - arg.Ammount,
-		})
-		if err != nil {
-			return err
+		// To preven deadlock from happening on the database, we can make sure to always update the 
+		// account with the smaller id first. Lets remember that the order in which queries happen is important 
+		// and can make deadlock errors if not done properly 
+		if arg.FromAccountId < arg.ToAccountId { 
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountId, -arg.Ammount, arg.ToAccountId)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.ToAccountId, arg.Ammount, arg.FromAccountId)
+			if err != nil {
+				return err
+			}
 		}
-		result.FromAccount = updatedFromAccount
 
-		account2,err := q.GetAccountForUpdates(ctx,arg.ToAccountId)
-		if err != nil {
-			return err
-		}
-
-		updatedToAccount, err := q.UpdateAccount(ctx, UpdateAccountParams{
-			ID: arg.ToAccountId,
-			Balance: account2.Balance + arg.Ammount,
-		})
-		if err != nil {
-			return err
-		}
-		result.ToAccount = updatedToAccount
-
-	
-
+		
 		return nil
 	})
 
-	
 	return result, err
+}
+
+
+func addMoney(
+	ctx context.Context, 
+	q *Queries,
+	accountId1 int64, 
+	amount int64, 
+	accountId2 int64,
+) (account1 Account, account2 Account, err error) {
+
+	account1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+		ID: accountId1,
+		Ammount: amount,
+	})
+
+	if err != nil {
+		return
+	}
+
+	account2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+		ID: accountId2,
+		Ammount: amount,
+	})
+
+	if err != nil {
+		return
+	}
+	return 
 }
