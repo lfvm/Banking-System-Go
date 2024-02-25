@@ -6,19 +6,22 @@ import (
 
 	"github.com/lfvm/simplebank/api"
 	db "github.com/lfvm/simplebank/db/sqlc"
+	"github.com/lfvm/simplebank/utils"
 	_ "github.com/lib/pq"
 )
 
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable"
-	serverAddress = "0.0.0.0:8080"
-)
+
 
 
 func main(){
+	config, err := utils.LoadConfig(".")
 
-	connection,err := sql.Open(dbDriver,dbSource)
+
+	if err != nil {
+		log.Fatal("Could not load env vars: ",err)
+	}
+
+	connection,err := sql.Open(config.DbDriver,config.DbSource)
 
 	if err != nil {
 		log.Fatal("Could not connect to the database: ",err)
@@ -26,7 +29,7 @@ func main(){
 
 	store:= db.NewStore(connection)
 	server := api.NewServer(store)
-	err = server.Start(serverAddress)
+	err = server.Start(config.ServerAddress)
 
 	if err != nil {
 		log.Fatal("Can not start server: ",err)

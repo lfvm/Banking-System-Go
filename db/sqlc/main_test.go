@@ -5,22 +5,29 @@ import (
 	"log"
 	"testing"
 
+	"github.com/lfvm/simplebank/utils"
 	_ "github.com/lib/pq"
 )
 
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable"
-)
+
 
 var testQueries *Queries
 var testDb *sql.DB
+var config utils.Config
 
 func TestMain(m *testing.M){
 
 	var err error
 
-	testDb,err = sql.Open(dbDriver,dbSource)
+	config, err = utils.LoadConfig("../../")
+
+
+	if err != nil {
+		log.Fatal("Could not load env vars: ",err)
+	}
+
+
+	testDb,err = sql.Open(config.DbDriver,config.DbSource)
 
 	if err != nil {
 		log.Fatal("Could not connect to the database: ",err)
