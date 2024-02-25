@@ -6,19 +6,24 @@ import (
 	"fmt"
 )
 
-type Store struct {
+type Store interface {
+	Querier
+	TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, error)
+}
+
+type SQLStore struct {
 	*Queries
 	db *sql.DB
 }
 
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db: db,
 		Queries: New(db),
 	}
 }
 
-func (store *Store) execTransaction(ctx context.Context, fn func(*Queries) error) error { 
+func (store *SQLStore) execTransaction(ctx context.Context, fn func(*Queries) error) error { 
 
 	// This function is used to execute transactions in a db 
 	// a transaction in a db is when there are required multiple operations 
@@ -63,7 +68,7 @@ type TransferTransactionResult struct {
 // performs a money transfer from one account to other 
 // It creates a transfer record, add account entries
 // and update account within a single db transaction 
-func (store *Store) TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, error) {
+func (store *SQLStore) TransferTransaction(ctx context.Context, arg TransferTransactionParams) (TransferTransactionResult, error) {
 
 	var result TransferTransactionResult
 	err := store.execTransaction(ctx, func(q *Queries) error {
