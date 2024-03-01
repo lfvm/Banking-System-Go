@@ -11,7 +11,7 @@ import (
 
 type createAccountRequest struct { 
 	Qwner string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=EUR USD MXN"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 
 
