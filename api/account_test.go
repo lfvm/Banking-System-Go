@@ -13,14 +13,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-
-func TestGetAccountAPI(t *testing.T){
+func TestGetAccountAPI(t *testing.T) {
 
 	account := randomAccount()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
 
 	store := mockdb.NewMockStore(ctrl)
 
@@ -34,24 +32,22 @@ func TestGetAccountAPI(t *testing.T){
 	server := NewServer(store)
 	recorder := httptest.NewRecorder()
 
-	url:= fmt.Sprintf("/accounts/%d", account.ID)
+	url := fmt.Sprintf("/accounts/%d", account.ID)
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 
-	require.NoError(t,err)
-	server.router.ServeHTTP(recorder,request)
+	require.NoError(t, err)
+	server.router.ServeHTTP(recorder, request)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
-
 }
 
-
-func randomAccount() db.Account{
+func randomAccount() db.Account {
 	return db.Account{
-		ID: utils.RandomInt(1,1000),	
-		Owner: utils.RandomOwner(),
-		Balance: utils.RandomMoney(),
+		ID:       utils.RandomInt(1, 1000),
+		Owner:    utils.RandomOwner(),
+		Balance:  utils.RandomMoney(),
 		Currency: utils.RandomCurrency(),
 	}
 }

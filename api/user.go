@@ -11,24 +11,20 @@ import (
 	"github.com/lib/pq"
 )
 
-
-type createUserRequest struct { 
+type createUserRequest struct {
 	FullName string `json:"full_name" binding:"required"`
 	UserName string `json:"username" binding:"required,alphanum"`
 	Password string `json:"password" binding:"required,min=6"`
 	Email    string `json:"email" binding:"required,email"`
 }
 
-
-type createUserResponse struct { 
+type createUserResponse struct {
 	Username          string    `json:"username"`
 	Email             string    `json:"email"`
 	FullName          string    `json:"full_name"`
 	CreatedAt         time.Time `json:"created_at"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 }
-
-
 
 func (server *Server) createUser(ctx *gin.Context) {
 
@@ -43,14 +39,14 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return 
+		return
 	}
 
-	arg:= db.CreateUserParams{
-		FullName: req.FullName,
-		Email: req.Email,
+	arg := db.CreateUserParams{
+		FullName:       req.FullName,
+		Email:          req.Email,
 		HashedPassword: hash,
-		Username: req.UserName,
+		Username:       req.UserName,
 	}
 
 	user, err := server.store.CreateUser(context.Background(), arg)
@@ -59,23 +55,23 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 		if pqError, ok := err.(*pq.Error); ok {
 			switch pqError.Code.Name() {
-				case "unique_violation": 
-					ctx.JSON(http.StatusForbidden, errorResponse(err))
-					return 
+			case "unique_violation":
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
 			}
 
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return 
+		return
 	}
 
 	rsp := createUserResponse{
-		Username: user.Username,
-		Email: user.Email,
-		CreatedAt: user.CreatedAt,
+		Username:          user.Username,
+		Email:             user.Email,
+		CreatedAt:         user.CreatedAt,
 		PasswordChangedAt: user.PasswordChangedAt,
-		FullName: user.FullName,
+		FullName:          user.FullName,
 	}
 	ctx.JSON(http.StatusCreated, rsp)
 }

@@ -10,16 +10,12 @@ import (
 	db "github.com/lfvm/simplebank/db/sqlc"
 )
 
-
-type transferRequest struct { 
-	FromAccountID int64 `json:"from_account_id" binding:"required,min=1"`
-	ToAccountID int64 `json:"to_account_id" binding:"required,min=1"`
-	Amount int64 `json:"amount" binding:"required,gt=0"`
-	Currency string `json:"currency" binding:"required,currency"`
+type transferRequest struct {
+	FromAccountID int64  `json:"from_account_id" binding:"required,min=1"`
+	ToAccountID   int64  `json:"to_account_id" binding:"required,min=1"`
+	Amount        int64  `json:"amount" binding:"required,gt=0"`
+	Currency      string `json:"currency" binding:"required,currency"`
 }
-
-
-
 
 func (server *Server) createTransfer(ctx *gin.Context) {
 
@@ -30,12 +26,11 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-	arg:= db.TransferTransactionParams{
+	arg := db.TransferTransactionParams{
 		FromAccountId: req.FromAccountID,
-		ToAccountId: req.ToAccountID,
-		Ammount: req.Amount,
+		ToAccountId:   req.ToAccountID,
+		Ammount:       req.Amount,
 	}
-
 
 	if !server.validAccount(ctx, req.FromAccountID, req.Currency) {
 		return
@@ -45,28 +40,22 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-
-
 	result, err := server.store.TransferTransaction(context.Background(), arg)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return 
+		return
 	}
 	ctx.JSON(http.StatusCreated, result)
 }
 
-
-func (server *Server) validAccount(ctx *gin.Context , accountId int64, currency string) bool {
-
+func (server *Server) validAccount(ctx *gin.Context, accountId int64, currency string) bool {
 
 	account, err := server.store.GetAccount(ctx, accountId)
 
-
-
 	if err != nil {
 
-		if  err == sql.ErrNoRows {
+		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return false
 		}
@@ -75,12 +64,11 @@ func (server *Server) validAccount(ctx *gin.Context , accountId int64, currency 
 		return false
 	}
 
-	if account.Currency != currency { 
+	if account.Currency != currency {
 		err := fmt.Errorf("account [%d] currency mismatch: %s vs %s", accountId, account.Currency, currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return false
 	}
-
 
 	return true
 

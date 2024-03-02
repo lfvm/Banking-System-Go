@@ -10,29 +10,25 @@ import (
 	_ "github.com/lib/pq"
 )
 
-
-
-
-func main(){
+func main() {
 	config, err := utils.LoadConfig(".")
 
-
 	if err != nil {
-		log.Fatal("Could not load env vars: ",err)
+		log.Fatal("Could not load env vars: ", err)
 	}
 
-	connection,err := sql.Open(config.DbDriver,config.DbSource)
+	connection, err := sql.Open(config.DbDriver, config.DbSource)
 
 	if err != nil {
-		log.Fatal("Could not connect to the database: ",err)
+		log.Fatal("Could not connect to the database: ", err)
 	}
 
-	store:= db.NewStore(connection)
+	store := db.NewStore(connection)
 	server := api.NewServer(store)
 	err = server.Start(config.ServerAddress)
 
 	if err != nil {
-		log.Fatal("Can not start server: ",err)
+		log.Fatal("Can not start server: ", err)
 	}
 
 }
