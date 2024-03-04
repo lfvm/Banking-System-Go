@@ -5,9 +5,10 @@ import (
 )
 
 type Config struct {
-	DbDriver      string `mapstructure:"DB_DRIVER"`
-	DbSource      string `mapstructure:"DB_SOURCE"`
-	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
+	DbDriver         string `mapstructure:"DB_DRIVER"`
+	DbSource         string `mapstructure:"DB_SOURCE"`
+	ServerAddress    string `mapstructure:"SERVER_ADDRESS"`
+	TokenSymetricKey string `mapstructure:"TOKEN_SYMETRIC_KEY"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

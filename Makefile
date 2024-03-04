@@ -5,7 +5,6 @@ postgres:
 createdb:
 	docker exec -it finance-postgres createdb --username=root --owner=root simple_bank
 
-
 dropdb:
 	docker exec -it finance-postgres dropdb simple_bank
 

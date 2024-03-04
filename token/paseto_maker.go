@@ -16,7 +16,7 @@ type PasetoMaker struct {
 func NewPasetoMaker(symetricKey string) (Maker, error) {
 
 	if len(symetricKey) != chacha20poly1305.KeySize {
-		return nil, fmt.Errorf("invalid symectric key must be of size %d", chacha20poly1305.KeySize)
+		return nil, fmt.Errorf("invalid symectric key must be of size %d, have %d", chacha20poly1305.KeySize, len(symetricKey))
 	}
 
 	return &PasetoMaker{
