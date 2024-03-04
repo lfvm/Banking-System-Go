@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/lfvm/simplebank/db/sqlc"
+	"github.com/lfvm/simplebank/token"
 	"github.com/lib/pq"
 )
 
@@ -24,8 +26,9 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.CreateAccountParams{
-		Owner:    req.Qwner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -62,6 +65,7 @@ func (server *Server) getAccountById(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	account, err := server.store.GetAccount(context.Background(), req.ID)
 
@@ -73,6 +77,12 @@ func (server *Server) getAccountById(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if account.Owner != authPayload.Username {
+		err := errors.New("account does not belong to the authenticated user")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, account)
@@ -93,7 +103,9 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Limit:  int32(req.PageSize),
 		Offset: (int32(req.PageId) - 1) * int32(req.PageSize),
 	}

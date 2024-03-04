@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/lfvm/simplebank/db/sqlc"
+	"github.com/lfvm/simplebank/token"
 )
 
 type transferRequest struct {
@@ -52,6 +53,7 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 func (server *Server) validAccount(ctx *gin.Context, accountId int64, currency string) bool {
 
 	account, err := server.store.GetAccount(ctx, accountId)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	if err != nil {
 
@@ -67,6 +69,12 @@ func (server *Server) validAccount(ctx *gin.Context, accountId int64, currency s
 	if account.Currency != currency {
 		err := fmt.Errorf("account [%d] currency mismatch: %s vs %s", accountId, account.Currency, currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return false
+	}
+
+	if account.Owner != authPayload.Username {
+		err := fmt.Errorf("account [%d] doesn't belong to the authenticated user", accountId)
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return false
 	}
 
