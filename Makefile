@@ -28,9 +28,11 @@ test:
 
 server: 
 	go run main.go
+devServer:
+	air -c .air.toml
 
 mockdb: 
 	mockgen -package mockdb  -destination db/mock/store.go github.com/lfvm/simplebank/db/sqlc Store
 
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mockdb migrateup1 migratedown1
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mockdb migrateup1  migratedown1 devServer
