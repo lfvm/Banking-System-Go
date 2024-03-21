@@ -33,8 +33,6 @@ func (server *Server) refreshToken(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("Token id:  %s", payload.ID)
-
 	session, err := server.store.GetSession(ctx, payload.ID)
 
 	if err != nil {
