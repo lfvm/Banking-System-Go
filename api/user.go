@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	db "github.com/lfvm/simplebank/db/sqlc"
 	"github.com/lfvm/simplebank/utils"
 	"github.com/lib/pq"
@@ -87,8 +88,10 @@ type logInRequest struct {
 }
 
 type logInRes struct {
-	AccesToken string       `json:"acces_token"`
-	User       userResponse `json:"user"`
+	AccesToken   string       `json:"acces_token"`
+	RefreshToken string       `json:"refresh_token"`
+	User         userResponse `json:"user"`
+	SessonId     uuid.UUID    `json:"session_id"`
 }
 
 func (server *Server) logIn(ctx *gin.Context) {
@@ -120,15 +123,37 @@ func (server *Server) logIn(ctx *gin.Context) {
 	}
 
 	// create acces token
-	accesToken, err := server.tokenMaker.CreateToken(user.Username, time.Minute*15)
+	accesToken, payload, err := server.tokenMaker.CreateToken(user.Username, time.Minute*15)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	refreshToken, refreshTokenPayload, err := server.tokenMaker.CreateToken(payload.Username, time.Hour*24)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		Username:     user.Username,
+		ID:           refreshTokenPayload.ID,
+		RefreshToken: refreshToken,
+		ClientIp:     ctx.ClientIP(),
+		UserAgent:    ctx.Request.UserAgent(),
+		ExpiresAt:    refreshTokenPayload.ExpiredAt,
+	})
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	rsp := logInRes{
-		AccesToken: accesToken,
-		User:       newUserResponse(user),
+		AccesToken:   accesToken,
+		User:         newUserResponse(user),
+		RefreshToken: refreshToken,
+		SessonId:     session.ID,
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }

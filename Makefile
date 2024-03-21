@@ -11,6 +11,9 @@ dropdb:
 migrateup:
 	migrate -path db/migrations -database "postgresql://postgres:Gy5RBAD3GB6twmZi33Ge@simplebank.cv3c7y8izzg1.us-east-1.rds.amazonaws.com:5432/simple_bank" -verbose up 
 
+migrateuplocal:
+	migrate -path db/migrations -database  "postgresql://postgres:secret@localhost:5432/simple_bank?sslmode=disable"  -verbose up 
+
 migrateup1:
 	migrate -path db/migrations -database "postgresql://postgres:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up 1
 
@@ -34,5 +37,8 @@ devServer:
 mockdb: 
 	mockgen -package mockdb  -destination db/mock/store.go github.com/lfvm/simplebank/db/sqlc Store
 
+new_migration:
+	migrate create -ext sql -dir db/migrations -seq $(name)
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mockdb migrateup1  migratedown1 devServer
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mockdb migrateup1  migratedown1 devServer migrateuplocal new_migration
